@@ -1,3 +1,3 @@
-module github.com/juzhongmishi/mapstructure
+module github.com/Neightly/mapstructure
 
 go 1.22
