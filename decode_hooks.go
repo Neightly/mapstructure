@@ -14,20 +14,18 @@ import (
 // typedDecodeHook takes a raw DecodeHookFunc (an interface{}) and turns
 // it into the proper DecodeHookFunc type, such as DecodeHookFuncType.
 func typedDecodeHook(h DecodeHookFunc) DecodeHookFunc {
-	// Create variables here so we can reference them with the reflect pkg
-	var f1 DecodeHookFuncType
-	var f2 DecodeHookFuncKind
-	var f3 DecodeHookFuncValue
 
 	// Fill in the variables into this interface and the rest is done
 	// automatically using the reflect package.
-	potential := []interface{}{f1, f2, f3}
+	var potential = []reflect.Type{
+		reflect.TypeOf(DecodeHookFuncKind(nil)),
+		reflect.TypeOf(DecodeHookFuncType(nil)),
+		reflect.TypeOf(DecodeHookFuncValue(nil)),
+	}
 
 	v := reflect.ValueOf(h)
-	vt := v.Type()
-	for _, raw := range potential {
-		pt := reflect.ValueOf(raw).Type()
-		if vt.ConvertibleTo(pt) {
+	for _, pt := range potential {
+		if v.CanConvert(pt) {
 			return v.Convert(pt).Interface()
 		}
 	}

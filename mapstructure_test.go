@@ -663,6 +663,39 @@ func TestDecode_EmbeddedSquash(t *testing.T) {
 	}
 }
 
+func TestDecode_EmbeddedSquash_DifferentFieldsWithSameTag(t *testing.T) {
+	type Base struct {
+		X string `mapstructure:"x"`
+	}
+	type Inner struct {
+		Base `mapstructure:",squash"`
+		ID   int64 `mapstructure:"id"`
+		X    int32 `mapstructure:"x"`
+	}
+	type Override struct {
+		Inner `mapstructure:",squash"`
+		X     string `mapstructure:"x"`
+	}
+	input := map[string]interface{}{
+		"id": uint8(64),
+		"x":  "bar",
+	}
+	var result Override
+	err := Decode(input, &result)
+	if err != nil {
+		t.Fatalf("got an err: %s", err.Error())
+	}
+	if result.Inner.Base.X != "bar" {
+		t.Errorf("result.Inner.Base.X value should be 'bar': %#v", result.X)
+	}
+	if result.Inner.X != 0 {
+		t.Errorf("Base.x value should be 0: %#v", result.Inner.X)
+	}
+	if result.X != "bar" {
+		t.Errorf("x value should be 'bar': %#v", result.X)
+	}
+}
+
 func TestDecodeFrom_EmbeddedSquash(t *testing.T) {
 	t.Parallel()
 
