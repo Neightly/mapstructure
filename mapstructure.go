@@ -1300,6 +1300,7 @@ func (d *Decoder) decodeStructFromMap(name string, dataVal, val reflect.Value) e
 	var remainField *field
 
 	fields := []field{}
+	nameTypes := make(map[string]reflect.Type, 64)
 	for len(structs) > 0 {
 		structVal := structs[0]
 		structs = structs[1:]
@@ -1320,6 +1321,14 @@ func (d *Decoder) decodeStructFromMap(name string, dataVal, val reflect.Value) e
 
 			// We always parse the tags cause we're looking for other tags too
 			tagParts := strings.Split(fieldType.Tag.Get(d.config.TagName), ",")
+			fieldName := fieldType.Name
+			if tagValue := tagParts[0]; tagValue != "" {
+				fieldName = tagValue
+			}
+			if _, ok := nameTypes[fieldName]; !ok {
+				// 最外层的优先
+				nameTypes[fieldName] = fieldType.Type
+			}
 			for _, tag := range tagParts[1:] {
 				if tag == "squash" {
 					squash = true
@@ -1345,26 +1354,10 @@ func (d *Decoder) decodeStructFromMap(name string, dataVal, val reflect.Value) e
 			// Build our field
 			if remain {
 				remainField = &field{fieldType, fieldVal}
-			} else {
+			} else if fieldType.Type == nameTypes[fieldName] { // only same type with outmost field
 				// Normal struct field, store it away
 				fields = append(fields, field{fieldType, fieldVal})
 			}
-		}
-	}
-
-	nameTypes := make(map[string]reflect.Type, len(fields))
-	for _, f := range fields {
-		fieldName := f.field.Name
-
-		tagValue := f.field.Tag.Get(d.config.TagName)
-		tagValue = strings.SplitN(tagValue, ",", 2)[0]
-		if tagValue != "" {
-			fieldName = tagValue
-		}
-
-		if _, ok := nameTypes[fieldName]; !ok {
-			// 最外层的优先
-			nameTypes[fieldName] = f.field.Type
 		}
 	}
 
@@ -1560,3 +1553,4 @@ func dereferencePtrToStructIfNeeded(v reflect.Value, tagName string) reflect.Val
 	}
 	return v
 }
+
